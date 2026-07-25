@@ -11,21 +11,36 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// --- LOOK HERE: Make sure these two lines are exactly in this order ---
-builder.Services.AddControllers();     // 1. Register controller paths first
-builder.Services.AddOpenApi();         // 2. Then register OpenAPI document services
-// ---------------------------------------------------------------------
+// 3. --- ADD THIS CORS POLICY BLOCK HERE ---
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // Your React app web address port
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+// ------------------------------------------
+
+builder.Services.AddControllers();
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();               // Generates raw JSON metadata data
-    app.MapScalarApiReference();    // Draws the interactive visual testing dashboard
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
+
+// 4. --- ACTIVATE CORS FILTER MIDDLEWARE HERE ---
+app.UseCors("AllowReactApp"); // Must be placed exactly between HttpsRedirection and Authorization
+// ----------------------------------------------
+
 app.UseAuthorization();
 app.MapControllers();
 
