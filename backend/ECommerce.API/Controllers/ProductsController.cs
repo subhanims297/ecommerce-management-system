@@ -11,13 +11,12 @@ namespace ECommerce.API.Controllers
     {
         private readonly AppDbContext _context;
 
-        // Inject the database context service directly into the controller
         public ProductsController(AppDbContext context)
         {
             _context = context;
         }
 
-        // 1. GET: api/products (Fetch all products from the database)
+        // 1. GET: api/products
         [HttpGet(Name = "GetProducts")]
         public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
         {
@@ -25,14 +24,31 @@ namespace ECommerce.API.Controllers
             return Ok(products);
         }
 
-        // 2. POST: api/products (Add a new product to the database)
+        // 2. POST: api/products
         [HttpPost(Name = "CreateProduct")]
-        public async Task<ActionResult<Product>> CreateProduct(Product product)
+        public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
         {
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetProducts), new { id = product.Id }, product);
+        }
+
+        // 3. DELETE: api/products/{id}
+        [HttpDelete("{id}", Name = "DeleteProduct")]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+
+            if (product == null)
+            {
+                return NotFound(new { message = $"Product with ID {id} was not found." });
+            }
+
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }

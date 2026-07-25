@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { type Product } from './interfaces/types';
+import type { Product } from './interfaces/types';
 
 export default function App() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+    // 1. NETWORK LIFECYCLE: Fetch products from SQL Server via the .NET API
     useEffect(() => {
-        // Make sure the port matches your running backend server terminal (e.g., 7204)
+        // Ensure the 4-digit port matches your running backend server console terminal (e.g., 7204)
         fetch('https://localhost:7204/api/products')
             .then((response) => {
                 if (!response.ok) {
@@ -25,6 +26,29 @@ export default function App() {
             });
     }, []);
 
+    // 2. ACTION ENGINE: Handle product deletion from the server and active state view
+    const handleDelete = (id: number) => {
+        if (!window.confirm("Are you completely sure you want to permanently delete this product from the database?")) {
+            return;
+        }
+
+        // Connects directly to your newly created .NET API DELETE endpoint matrix
+        fetch(`https://localhost:7204/api/products/${id}`, {
+            method: 'DELETE',
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Failed to delete the item from the server registry.");
+                }
+                // Instantly wipe the product card from the screen without needing a manual refresh
+                setProducts(products.filter((product) => product.id !== id));
+            })
+            .catch((err) => {
+                alert(err.message);
+            });
+    };
+
+    // 3. FALLBACK VIEW: Loading Screen state animation
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -33,6 +57,7 @@ export default function App() {
         );
     }
 
+    // 4. FALLBACK VIEW: Server Offline / Error screen card display
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -44,10 +69,12 @@ export default function App() {
         );
     }
 
+    // 5. MASTER CORE LAYOUT DESIGN
     return (
         <div className="min-h-screen bg-gray-50 p-6 md:p-12">
             <div className="max-w-7xl mx-auto">
-                {/* Header Block Section */}
+
+                {/* Top Header Information panel banner */}
                 <div className="border-b border-gray-200 pb-6 mb-8 flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Full-Stack Storefront</h1>
@@ -58,14 +85,14 @@ export default function App() {
                     </span>
                 </div>
 
-                {/* Empty Inventory State Fallback */}
+                {/* Condition Check: If Database Table holds 0 items, display instructions fallback */}
                 {products.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
                         <p className="text-gray-500 font-medium">Your database is connected, but the products table is completely empty.</p>
                         <p className="text-gray-400 text-sm mt-1">Use your Scalar dashboard panel to POST mock item rows!</p>
                     </div>
                 ) : (
-                    /* Grid Matrix mapping items into styled components */
+                    /* Responsive Layout Grid Matrix displaying individual product items */
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {products.map((product) => (
                             <div key={product.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col">
@@ -78,12 +105,19 @@ export default function App() {
                                     </div>
                                     <p className="text-gray-500 text-sm line-clamp-3 mb-4">{product.description}</p>
                                 </div>
-                                <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+
+                                {/* Product Footer Container holding stock indicators and custom deletion hook */}
+                                <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center gap-4">
                                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${product.stockQuantity > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                                         {product.stockQuantity > 0 ? `${product.stockQuantity} items in stock` : 'Out of Stock'}
                                     </span>
-                                    <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-colors duration-150">
-                                        Manage Item
+
+                                    {/* RED UNIFIED DELETION ACTION BUTTON */}
+                                    <button
+                                        onClick={() => handleDelete(product.id)}
+                                        className="bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold px-4 py-2 rounded-xl transition-colors duration-150"
+                                    >
+                                        Delete
                                     </button>
                                 </div>
                             </div>
