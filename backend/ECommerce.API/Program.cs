@@ -1,5 +1,6 @@
 using ECommerce.API.Data;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,15 +11,18 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+// --- LOOK HERE: Make sure these two lines are exactly in this order ---
+builder.Services.AddControllers();     // 1. Register controller paths first
+builder.Services.AddOpenApi();         // 2. Then register OpenAPI document services
+// ---------------------------------------------------------------------
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // Basic local testing setup
+    app.MapOpenApi();               // Generates raw JSON metadata data
+    app.MapScalarApiReference();    // Draws the interactive visual testing dashboard
 }
 
 app.UseHttpsRedirection();
